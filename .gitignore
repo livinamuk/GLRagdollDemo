@@ -78,7 +78,7 @@ StyleCopReport.xml
 *.ilk
 *.meta
 *.obj
-!HellEngine/res/models/*.obj
+!GLRagdollDemo/res/models/*.obj
 *.iobj
 *.pch
 *.pdb
