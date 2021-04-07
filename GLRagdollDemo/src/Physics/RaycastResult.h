@@ -9,7 +9,9 @@ class RaycastResult
 public: // methods
 	RaycastResult();
 	void CastRay(glm::vec3 rayOrigin, glm::vec3 rayDirection, float rayLength);
-	static RaycastResult CastMouseRay(Camera* camera);
+	static RaycastResult CastCameraRay(Camera* camera);
+
+	static RaycastResult CastMouseRay(Camera* camera, int mouseX, int mouseY, int screenWidth, int screenHeight);
 
 public: // members
 	//int m_elementIndex; 

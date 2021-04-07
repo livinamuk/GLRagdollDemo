@@ -3,6 +3,30 @@
 #include <Windows.h>
 #include <random>
 
+bool Util::GetRayPlaneIntersecion(const glm::vec3& origin, const glm::vec3& dir, const glm::vec3& plane_point, const glm::vec3& normal, float& out)
+{
+	float d = dot(dir, normal);
+	if (d == 0) {
+		return false;
+	}
+	d = dot(plane_point - origin, normal) / d;
+	out = d;
+	return true;
+}
+
+
+glm::vec3 Util::GetMouseRay(glm::mat4 projectionMatrix, glm::mat4 viewMatrix, int mouseX, int mouseY, int screenWidth, int screenHeight)
+{
+	float x = (2.0f * mouseX) / screenWidth - 1.0f;
+	float y = 1.0f - (2.0f * mouseY) / screenHeight;
+	glm::vec3 ray_nds = glm::vec3(x, y, 1.0f);
+	glm::vec4 ray_clip = glm::vec4(ray_nds.x, ray_nds.y, -1.0, 1.0);
+	glm::vec4 ray_eye = inverse(projectionMatrix) * ray_clip;
+	ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
+	glm::vec3 ray_wor = glm::normalize(glm::vec3(inverse(viewMatrix) * ray_eye));
+	return ray_wor;
+}
+
 void Util::PrintVec3(glm::vec3 v)
 {
 	std::cout << "(" << v.x << ", " << v.y << ", " << v.z << ")\n";

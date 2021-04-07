@@ -160,10 +160,12 @@ void Ragdoll::BuildFromJsonFile(std::string filename, Transform spawnLocation)
 		rigid.rigidBody->setUserPointer(entityData);
 		int group = CollisionGroups::ENEMY;
 		int mask = CollisionGroups::TERRAIN | CollisionGroups::ENEMY | CollisionGroups::HOUSE;
+
 		// Hard coded some values cause my JSON has shitty ones
 		rigid.rigidBody->setDamping(0.50f, 3.0f);
 		rigid.rigidBody->setDeactivationTime(5.8f);
 		rigid.rigidBody->setFriction(0.8);
+
 		btDynamicsWorld* m_ownerWorld = Physics::s_dynamicsWorld;
 		m_ownerWorld->addRigidBody(rigid.rigidBody, group, mask);
 	}

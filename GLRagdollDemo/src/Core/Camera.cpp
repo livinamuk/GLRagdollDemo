@@ -10,9 +10,10 @@
 Camera::Camera()
 {
 	m_viewHeight = 1.3f;
-	m_transform.position = glm::vec3(0, m_viewHeight, 2);
+	m_transform.position = glm::vec3(0, m_viewHeight, 2.5);
 	m_transform.rotation = glm::vec3(-HELL_PI, -3.14, 0);
-	m_transform.rotation = glm::vec3(0, 0, 0);
+	//m_transform.rotation = glm::vec3(0 - 0.15f, 0, 0);
+	m_transform.rotation = glm::vec3(0 - 0.15f, 0, 0);
 	m_transform.scale = glm::vec3(1);
 	m_oldX = 1280 / 2;
 	m_oldY = 720 / 2;
@@ -45,8 +46,8 @@ void Camera::CalculateProjectionMatrix(int screenWidth, int screenHeight)
 
 void Camera::Update(float deltaTime)
 {
-	MouseLook(deltaTime);
-	PlayerMovement(deltaTime);
+	//MouseLook(deltaTime);
+	//PlayerMovement(deltaTime);
 }
 
 void Camera::MouseLook(float deltaTime)

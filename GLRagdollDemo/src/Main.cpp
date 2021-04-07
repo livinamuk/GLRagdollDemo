@@ -26,8 +26,8 @@
 
 void ResetScene();
 void NewRagdoll();
+SkinnedModel* nurseModel;
 std::vector<GameCharacter> gameCharacters; // each character has a ragdoll
-
 
 /////////////////////
 //   Entry Point   //
@@ -37,6 +37,10 @@ int main()
     CoreGL::InitGL(SCR_WIDTH, SCR_HEIGHT);
     Physics::Init();
     Renderer::Init();
+    
+    Input::s_showCursor = true;
+
+    nurseModel = FileImporter::LoadSkinnedModel("NurseGuy.fbx");
 
     Camera camera;
     CoreGL::SetCamera(&camera);
@@ -44,6 +48,7 @@ int main()
     // Create couch (very important)
     Model couchModel = Model("Couch.obj");
     Entity couchEntity = Entity(&couchModel, Texture::GetTexIDByTexName("Couch_ALB.png"));    
+
     couchEntity.m_transform.position.z -= 1;
     couchEntity.m_transform.scale = glm::vec3(0.07000000029802323f);
     couchEntity.UpdateCollisionObject();
@@ -60,11 +65,8 @@ int main()
         lastFrame = CoreGL::GetGLTime();
         camera.Update(deltaTime);
 
-        // Physics Step
-        int substeps = 2;
-        btScalar timeStep = 1.0 / 60.0;
-        for (auto s = 0U; s < substeps; s++)
-            Physics::s_dynamicsWorld->stepSimulation(deltaTime / substeps, 1, timeStep / substeps);
+        Physics::DragRagdoll(&camera);
+        Physics::Update(deltaTime);
 
         // Update OpenGL and get keyboard state
         CoreGL::OnUpdate();
@@ -81,28 +83,12 @@ int main()
 
         // Reset scene?
         if (Input::s_keyPressed[HELL_KEY_R])
-            ResetScene();
+            ResetScene();      
 
-        // Shoot ragdoll  
-        RaycastResult raycastResult;
-        raycastResult.CastRay(camera.m_transform.position, camera.m_Front, 10);
-        if (Input::s_leftMousePressed && raycastResult.m_objectType == PhysicsObjectType::RAGDOLL)
-        {
-            float FORCE_SCALING_FACTOR = 22;
-            raycastResult.m_rigidBody->activate(true);
-            btVector3 centerOfMass = raycastResult.m_rigidBody->getCenterOfMassPosition();
-            btVector3 hitPoint = Util::glmVec3_to_btVec3(raycastResult.m_hitPoint);
-            btVector3 force = Util::glmVec3_to_btVec3(camera.m_Front) * FORCE_SCALING_FACTOR;
-            raycastResult.m_rigidBody->applyImpulse(force, hitPoint - centerOfMass);
-        }
-
-        // Text to blit...
-        TextBlitter::BlitLine("Ray Hit: " + Util::PhysicsObjectEnumToString(raycastResult.m_objectType));
-        TextBlitter::BlitLine("Space: spawn ragdoll");
-        TextBlitter::BlitLine("B: toggle debug view");
-        TextBlitter::BlitLine("Left click: shoot");
-        TextBlitter::BlitLine("R: reset scene");
-        TextBlitter::BlitLine("WSAD: walk");
+        TextBlitter::BlitLine("Ragdoll GL Demo");
+        TextBlitter::BlitLine("Space: Spawn ragdoll");
+        TextBlitter::BlitLine("Mouse: Click to drag");
+        TextBlitter::BlitLine("R: Reset scene");
 
         // RENDER FRAME
         Renderer::RenderFrame(gameCharacters, couchEntity, &camera);
@@ -134,7 +120,7 @@ void NewRagdoll()
     gameCharacter.m_transform.rotation.x = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HELL_PI)));
     gameCharacter.m_transform.rotation.y = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HELL_PI)));
     gameCharacter.m_transform.rotation.z = static_cast <float> (rand()) / (static_cast <float> (RAND_MAX / (HELL_PI)));
-    gameCharacter.m_skinnedModel = FileImporter::LoadSkinnedModel("NurseGuy.fbx");
+    gameCharacter.m_skinnedModel = nurseModel;
     gameCharacter.m_ragdoll.BuildFromJsonFile("ragdoll.json", gameCharacter.m_transform);
     gameCharacter.m_skinningMethod = SkinningMethod::RAGDOLL;
     gameCharacters.push_back(gameCharacter);

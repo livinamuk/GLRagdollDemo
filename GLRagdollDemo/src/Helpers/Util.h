@@ -18,9 +18,12 @@
 #include "assimp/matrix4x4.h"
 #include "assimp/matrix3x3.h"
 
+
 class Util
 {
 public:
+	static bool GetRayPlaneIntersecion(const glm::vec3& origin, const glm::vec3& dir, const glm::vec3& plane_point, const glm::vec3& normal, float& out);
+	static glm::vec3 GetMouseRay(glm::mat4 projectionMatrix, glm::mat4 viewMatrix, int mouseX, int mouseY, int screenWidth, int screenHeight);
 	static void PrintMat4(glm::mat4 m);
 	static void PrintVec3(glm::vec3 v);
 	static std::string FileNameFromPath(std::string filepath);

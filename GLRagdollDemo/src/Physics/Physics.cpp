@@ -84,3 +84,164 @@ void Physics::DebugDraw(Shader* shader)
 	glDrawArrays(GL_LINES, 0, s_debugDraw.vertices.size());
 }
 
+
+
+
+struct RayResult {
+    btRigidBody* pBody;
+    btVector3 hitPoint;
+};
+
+
+
+
+#include "Physics/RaycastResult.h"
+#include "Core/CoreGL.h"
+
+void Physics::DragRagdoll(Camera* camera)
+{
+    static btTypedConstraint* m_pPickConstraint;
+    static btRigidBody* m_pPickedBody;
+    static glm::vec3 grabPos;
+
+    if (Input::s_leftMousePressed)
+    {
+        // Find the grab position
+        RaycastResult mouseRay = RaycastResult::CastMouseRay(camera, Input::s_mouseX, Input::s_mouseY, CoreGL::s_windowWidth, CoreGL::s_windowHeight);
+
+        if (mouseRay.m_rigidBody)
+        {
+            grabPos = mouseRay.m_hitPoint;
+            m_pPickedBody = mouseRay.m_rigidBody;
+
+            // Create restraint
+            if (mouseRay.m_objectType == PhysicsObjectType::RAGDOLL)
+            {
+                m_pPickedBody->setActivationState(DISABLE_DEACTIVATION);
+
+                // get the hit position relative to the body we hit
+                btVector3 localPivot = m_pPickedBody->getCenterOfMassTransform().inverse() * Util::glmVec3_to_btVec3(grabPos);
+
+                // create a transform for the pivot point
+                btTransform pivot;
+                pivot.setIdentity();
+                pivot.setOrigin(localPivot);
+
+                // create our constraint object
+                btGeneric6DofConstraint* dof6 = new btGeneric6DofConstraint(*m_pPickedBody, pivot, true);
+                bool bLimitAngularMotion = true;
+                if (bLimitAngularMotion) {
+                    dof6->setAngularLowerLimit(btVector3(0, 0, 0));
+                    dof6->setAngularUpperLimit(btVector3(0, 0, 0));
+                }
+
+                // add the constraint to the world
+                Physics::s_dynamicsWorld->addConstraint(dof6, true);
+
+                // store a pointer to our constraint
+                m_pPickConstraint = dof6;
+
+                // define the 'strength' of our constraint (each axis)
+                float cfm = 0.5f;
+                dof6->setParam(BT_CONSTRAINT_STOP_CFM, cfm, 0);
+                dof6->setParam(BT_CONSTRAINT_STOP_CFM, cfm, 1);
+                dof6->setParam(BT_CONSTRAINT_STOP_CFM, cfm, 2);
+                dof6->setParam(BT_CONSTRAINT_STOP_CFM, cfm, 3);
+                dof6->setParam(BT_CONSTRAINT_STOP_CFM, cfm, 4);
+                dof6->setParam(BT_CONSTRAINT_STOP_CFM, cfm, 5);
+
+                // define the 'error reduction' of our constraint (each axis)
+                float erp = 0.5f;
+                dof6->setParam(BT_CONSTRAINT_STOP_ERP, erp, 0);
+                dof6->setParam(BT_CONSTRAINT_STOP_ERP, erp, 1);
+                dof6->setParam(BT_CONSTRAINT_STOP_ERP, erp, 2);
+                dof6->setParam(BT_CONSTRAINT_STOP_ERP, erp, 3);
+                dof6->setParam(BT_CONSTRAINT_STOP_ERP, erp, 4);
+                dof6->setParam(BT_CONSTRAINT_STOP_ERP, erp, 5);
+            }
+        }
+        else
+            m_pPickedBody = NULL;
+    }
+
+
+
+
+    if (Input::s_leftMouseDown)
+    {
+        if (m_pPickedBody) {
+            btGeneric6DofConstraint* pickCon = static_cast<btGeneric6DofConstraint*>(m_pPickConstraint);
+
+            if (pickCon)
+            {
+
+
+                // Ray to plane intersection 
+                float dd;
+                glm::vec3 origin = camera->m_transform.position;
+                glm::vec3 dirr = Util::GetMouseRay(camera->m_projectionMatrix, camera->m_viewMatrix, Input::s_mouseX, Input::s_mouseY, CoreGL::s_windowWidth, CoreGL::s_windowHeight);
+                glm::vec3 plane_point = grabPos;
+                //glm::vec3 normal = camera.m_Front * glm::vec3(-1);
+                glm::vec3 normal = glm::vec3(0, 0, 1);
+
+                if (Util::GetRayPlaneIntersecion(origin, dirr, plane_point, normal, dd))
+                {
+                    glm::vec3 location = origin + (dirr * dd);
+                    
+                    if (location.y < 0)
+                        location.y = 0;
+                    //TextBlitter::BlitLine("initial grab pos:        " + std::to_string(grabPos.x) + ", " + std::to_string(grabPos.y) + ", " + std::to_string(grabPos.z));
+                    //TextBlitter::BlitLine("ray plane intersect pos: " + std::to_string(location.x) + ", " + std::to_string(location.y) + ", " + std::to_string(location.z));
+
+                    pickCon->getFrameOffsetA().setOrigin(Util::glmVec3_to_btVec3(location));
+                }
+            }
+
+            //   TextBlitter::BlitLine("ray_nds:  " + std::to_string(ray_nds.x) + ", " + std::to_string(ray_nds.y) + ", " + std::to_string(ray_nds.z));
+            //   TextBlitter::BlitLine("ray_clip: " + std::to_string(ray_clip.x) + ", " + std::to_string(ray_clip.y) + ", " + std::to_string(ray_clip.z) + ", " + std::to_string(ray_clip.w));
+            //   TextBlitter::BlitLine("ray_eye:  " + std::to_string(ray_eye.x) + ", " + std::to_string(ray_eye.y) + ", " + std::to_string(ray_eye.z) + ", " + std::to_string(ray_eye.w));
+            //   TextBlitter::BlitLine("ray_wor:  " + std::to_string(ray_wor.x) + ", " + std::to_string(ray_wor.y) + ", " + std::to_string(ray_wor.z));
+        }
+    }
+    else
+    {
+        // exit in erroneous situations
+        if (!m_pPickConstraint || !Physics::s_dynamicsWorld)
+            return;
+
+        // remove the constraint from the world
+        Physics::s_dynamicsWorld->removeConstraint(m_pPickConstraint);
+
+        // delete the constraint object
+        delete m_pPickConstraint;
+
+        // reactivate the body
+        m_pPickedBody->forceActivationState(ACTIVE_TAG);
+        m_pPickedBody->setDeactivationTime(0.f);
+
+        // clear the pointers
+        m_pPickConstraint = 0;
+        m_pPickedBody = 0;
+    }
+
+    // Text to blit...
+   // TextBlitter::BlitLine("Ray Hit: " + Util::PhysicsObjectEnumToString(raycastResult.m_objectType));
+ //   TextBlitter::BlitLine("Space: spawn ragdoll");
+//     TextBlitter::BlitLine("B: toggle debug view");
+//     TextBlitter::BlitLine("Left click: shoot");
+//     TextBlitter::BlitLine("R: reset scene");
+//     TextBlitter::BlitLine("WSAD: walk");
+
+}
+
+void Physics::Update(float deltatime)
+{
+    // Physics Step
+    int substeps = 2;
+    btScalar timeStep = 1.0 / 60.0;
+    for (auto s = 0U; s < substeps; s++)
+        Physics::s_dynamicsWorld->stepSimulation(deltatime / substeps, 1, timeStep / substeps);
+}
+
+
+

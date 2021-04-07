@@ -65,7 +65,7 @@ void RaycastResult::CastRay(glm::vec3 rayOrigin, glm::vec3 rayDirection, float r
 	}
 }
 
-RaycastResult RaycastResult::CastMouseRay(Camera* camera)
+RaycastResult RaycastResult::CastCameraRay(Camera* camera)
 {
 	glm::vec4 lRayStart_NDC(
 		((float)Input::s_mouseX / (float)CoreGL::s_windowWidth - 0.5f) * 2.0f, // [0,1024] -> [-1,1]
@@ -155,4 +155,59 @@ RaycastResult RaycastResult::CastMouseRay(Camera* camera)
 		}
 	}
 	return raycastResult;
+}
+
+RaycastResult RaycastResult::CastMouseRay(Camera* camera, int mouseX, int mouseY, int screenWidth, int screenHeight)
+{
+	RaycastResult result;
+	result.m_distance = 0;
+	result.m_hitPoint = glm::vec3(0);;
+	result.m_objectPtr = nullptr;
+	result.m_surfaceNormal = glm::vec3(0);
+	result.m_objectType = PhysicsObjectType::UNDEFINED;
+
+	float x = (2.0f * mouseX) / screenWidth - 1.0f;
+	float y = 1.0f - (2.0f * mouseY) / screenHeight;
+	glm::vec3 ray_nds = glm::vec3(x, y, 1.0f);
+	glm::vec4 ray_clip = glm::vec4(ray_nds.x, ray_nds.y, -1.0, 1.0);
+	glm::vec4 ray_eye = inverse(camera->m_projectionMatrix) * ray_clip;
+	ray_eye = glm::vec4(ray_eye.x, ray_eye.y, -1.0, 0.0);
+	glm::vec3 ray_wor = glm::normalize(glm::vec3(inverse(camera->m_viewMatrix) * ray_eye));
+	
+
+	glm::vec3 rayOrigin = camera->m_transform.position;
+	glm::vec3 rayDirection = ray_wor;
+	float rayLength = 100;
+	
+	// Bail if NAN origin`
+	if (rayOrigin.x != rayOrigin.x)
+		return result;
+
+	// End of ray
+	glm::vec3 rayEnd = rayOrigin + (rayDirection * glm::vec3(rayLength));
+
+	btCollisionWorld::ClosestRayResultCallback rayCallback(btVector3(rayOrigin.x, rayOrigin.y, rayOrigin.z), btVector3(rayEnd.x, rayEnd.y, rayEnd.z));
+
+	rayCallback.m_collisionFilterGroup = btBroadphaseProxy::AllFilter;
+
+	Physics::s_dynamicsWorld->rayTest(btVector3(rayOrigin.x, rayOrigin.y, rayOrigin.z),	btVector3(rayEnd.x, rayEnd.y, rayEnd.z), rayCallback);
+
+	if (rayCallback.hasHit())
+	{
+		result.m_hitPoint = Util::btVec3_to_glmVec3(rayCallback.m_hitPointWorld);
+		result.m_distance = (rayCallback.m_hitPointWorld - Util::glmVec3_to_btVec3(rayOrigin)).length();
+		result.m_surfaceNormal = Util::btVec3_to_glmVec3(rayCallback.m_hitNormalWorld);
+
+		btRigidBody* rigidBody = (btRigidBody*)rayCallback.m_collisionObject;
+		if (rigidBody)
+			result.m_rigidBody = rigidBody;
+
+		EntityData* entityData = (EntityData*)rigidBody->getUserPointer();
+		if (entityData) {
+			result.m_objectType = entityData->type;
+			result.m_objectPtr = entityData->ptr;
+		}
+	}
+
+	return result;
 }

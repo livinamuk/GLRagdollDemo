@@ -20,6 +20,7 @@ void Renderer::Init()
     Texture::LoadTexture("CharSheet.png");
     Texture::LoadTexture("Nurse_ALB.png");;
     Texture::LoadTexture("Nurse2_ALB.png");
+    Texture::LoadTexture("red.png");
       
     s_gBuffer = GBuffer(CoreGL::s_windowWidth, CoreGL::s_windowHeight);
 }
@@ -65,6 +66,8 @@ void Renderer::RenderFrame(std::vector<GameCharacter>& gameCharacters, Entity& c
     s_test_shader.setMat4("projection", camera->m_projectionMatrix);
     s_test_shader.setMat4("view", camera->m_viewMatrix);
     couch.DrawEntity(&s_test_shader);
+
+   // sphere.DrawEntity(&s_test_shader);
 
     // Draw ragdolls
     s_skinned_model_shader.use();
