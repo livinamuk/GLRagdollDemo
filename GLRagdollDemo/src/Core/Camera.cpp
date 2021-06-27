@@ -46,8 +46,12 @@ void Camera::CalculateProjectionMatrix(int screenWidth, int screenHeight)
 
 void Camera::Update(float deltaTime)
 {
-	//MouseLook(deltaTime);
-	//PlayerMovement(deltaTime);
+
+	if (!Input::s_showCursor)
+	{
+		MouseLook(deltaTime);
+		PlayerMovement(deltaTime);
+	}
 }
 
 void Camera::MouseLook(float deltaTime)

@@ -65,13 +65,77 @@ int main()
         lastFrame = CoreGL::GetGLTime();
         camera.Update(deltaTime);
 
+
         Physics::DragRagdoll(&camera);
-        Physics::Update(deltaTime);
+        
+
+      ///  if (Input::s_keyPressed[HELL_KEY_P])
+            Physics::Update(deltaTime);
 
         // Update OpenGL and get keyboard state
         CoreGL::OnUpdate();
         CoreGL::ProcessInput();
         Input::HandleKeypresses();
+
+        static int damp = gameCharacters[0].m_ragdoll.m_jointComponents[0].drive_angularDamping;// 400;
+        static int stiff = gameCharacters[0].m_ragdoll.m_jointComponents[0].drive_angularStiffness;// 200;
+        static int iterations = 100;
+
+static float time = 0;
+time += 0.1f;
+
+        for (int j = 0; j  < gameCharacters[0].m_ragdoll.m_jointComponents.size(); j++)
+        {
+            auto joint = gameCharacters[0].m_ragdoll.m_jointComponents[j];
+
+            if (j == 7)
+            {
+                
+                float value =  (std::sin(time)) * HELL_PI ;   
+             //   joint.constraint->setServoTarget(3, value);
+           //     joint.constraint->setServoTarget(4, value);
+           //     joint.constraint->setServoTarget(5, value);
+           //     TextBlitter::BlitLine("value: " + std::to_string(value));
+
+
+                float vel = 10;
+                /*
+joint.constraint->setMaxMotorForce(3, 10000);
+joint.constraint->setTargetVelocity(3, vel);
+joint.constraint->setMaxMotorForce(4, 10000);
+joint.constraint->setTargetVelocity(4, vel);
+joint.constraint->setMaxMotorForce(5, 10000);
+joint.constraint->setTargetVelocity(5, vel);*/
+            }
+
+         //   std::cout << j << " " << joint.name << "\n";
+
+            for (int i = 0; i < 6; i++) {
+                joint.constraint->setDamping(i, damp);
+                joint.constraint->setStiffness(i, stiff);
+                joint.constraint->setOverrideNumSolverIterations(iterations);
+
+            }
+        }
+
+        if (Input::s_keyDown[HELL_KEY_P])
+            stiff++;
+        if (Input::s_keyDown[HELL_KEY_O])
+            stiff--;
+        if (Input::s_keyDown[HELL_KEY_L])
+            damp++;
+        if (Input::s_keyDown[HELL_KEY_K])
+            damp--;
+
+        if (Input::s_keyPressed[HELL_KEY_I])
+            Physics::s_subSteps++;
+        if (Input::s_keyPressed[HELL_KEY_U])
+            Physics::s_subSteps--;
+        if (Input::s_keyPressed[HELL_KEY_J])
+            iterations *= 10;
+        if (Input::s_keyPressed[HELL_KEY_H])
+            iterations *= 0.1;
+
 
         // Hotload shader?
         if (Input::s_keyPressed[HELL_KEY_H])
@@ -89,6 +153,12 @@ int main()
         TextBlitter::BlitLine("Space: Spawn ragdoll");
         TextBlitter::BlitLine("Mouse: Click to drag");
         TextBlitter::BlitLine("R: Reset scene");
+        TextBlitter::BlitLine("B: toggle debug");
+        TextBlitter::BlitLine(" ");
+        TextBlitter::BlitLine("Stiffness:  " + std::to_string(stiff));
+        TextBlitter::BlitLine("Damping:    " + std::to_string(damp));
+        TextBlitter::BlitLine("Substeps:   " + std::to_string(Physics::s_subSteps));
+        TextBlitter::BlitLine("Iterations: " + std::to_string(iterations));
 
         // RENDER FRAME
         Renderer::RenderFrame(gameCharacters, couchEntity, &camera);

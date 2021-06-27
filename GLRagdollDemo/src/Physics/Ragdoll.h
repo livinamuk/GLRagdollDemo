@@ -13,6 +13,9 @@
 #include "Helpers/Util.h"
 #include "Physics/Physics.h"
 
+#include "BulletDynamics/Featherstone/btMultiBodyConstraint.h"
+#include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
+
 
 struct RigidComponent
 {
@@ -38,12 +41,24 @@ public:
 	// Drive component
 	float drive_angularDamping, drive_angularStiffness, drive_linearDampening, drive_linearStiffness;
 	glm::mat4 target;
+	bool drive_enabled;
 
 	// Limit component
 	float twist, swing1, swing2, limit_angularStiffness, limit_angularDampening, limit_linearStiffness, limit_linearDampening;
-	btConeTwistConstraint* coneTwist;
+	//btConeTwistConstraint* coneTwist;
+	//btGeneric6DofConstraint* dof6;
+	btGeneric6DofSpring2Constraint* constraint;
+
+//	btMultiBodyConstraint* multiBodyConstraint;
+	
 	glm::vec3 limit;
-	bool enabled;
+	bool joint_enabled;
+};
+
+struct DriveComponent
+{
+public:
+
 };
 
 

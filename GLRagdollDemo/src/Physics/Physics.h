@@ -18,6 +18,8 @@ public: // fields
 	static btConstraintSolver* s_solver;
 	static btDiscreteDynamicsWorld* s_dynamicsWorld;
 	 
+	static int s_subSteps;
+
 public: // methods 
 	static void Init();
 	static void DebugDraw(Shader* shader);
